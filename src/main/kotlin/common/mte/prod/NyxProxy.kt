@@ -89,6 +89,9 @@ class NyxProxy : NyxMTECubeBase<NyxProxy> {
     // Persisted recipe locks bypass strategy matching and cannot be safe for dynamic recipes.
     override fun supportsSingleRecipeLocking(): Boolean = false
 
+    // The controller selects the machine and parallel count; it is never a recipe ingredient.
+    override fun canUseControllerSlotForRecipe(): Boolean = false
+
     override fun getAvailableRecipeMaps(): Collection<RecipeMap<*>?> = emptyList()
 
     override fun onScrewdriverRightClick(

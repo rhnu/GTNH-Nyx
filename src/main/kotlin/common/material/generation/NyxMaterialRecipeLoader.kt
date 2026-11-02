@@ -228,32 +228,32 @@ class NyxMaterialRecipeLoader(
                     TextureFactory.of(Textures.BlockIcons.OVERLAY_LENS, mat.color),
                 ) // .let { GregTechAPI.registerCover(mat.get(lens), it, CoverLens(dye.mIndex, it)) }
 
-            OreDictionary.getOres("craftingLens${dye.name.replace("\\s".toRegex(), "")}}").forEach {
-                it.stackSize = 0
+            OreDictionary.getOres("craftingLens${dye.mName.replace(" ", "")}").forEach { registeredLens ->
+                val catalyst = registeredLens.copy().apply { stackSize = 0 }
 
                 GRecipeBuilder
-                    .itemInputs(mat.get(gemChipped, 3), it)
+                    .itemInputs(mat.get(gemChipped, 3), catalyst)
                     .itemOutputs(mat.get(gemFlawed, 1))
                     .durSec(30)
                     .eut(RECIPE_LV)
                     .addTo(laserEngraverRecipes)
 
                 GRecipeBuilder
-                    .itemInputs(mat.get(gemFlawed, 3), it)
+                    .itemInputs(mat.get(gemFlawed, 3), catalyst)
                     .itemOutputs(mat.get(gem, 1))
                     .durSec(30)
                     .eut(RECIPE_MV)
                     .addTo(laserEngraverRecipes)
 
                 GRecipeBuilder
-                    .itemInputs(mat.get(gem, 3), it)
+                    .itemInputs(mat.get(gem, 3), catalyst)
                     .itemOutputs(mat.get(gemFlawless, 1))
                     .durMin(1)
                     .eut(RECIPE_HV)
                     .addTo(laserEngraverRecipes)
 
                 GRecipeBuilder
-                    .itemInputs(mat.get(gemFlawless, 3), it)
+                    .itemInputs(mat.get(gemFlawless, 3), catalyst)
                     .itemOutputs(mat.get(gemExquisite, 1))
                     .durMin(2)
                     .eut(RECIPE_EV)
@@ -389,11 +389,11 @@ class NyxMaterialRecipeLoader(
             .addTo(benderRecipes)
 
         GRecipeBuilder
-            .itemInputs(mat.get(ingot, 2), GTUtility.getIntegratedCircuit(2))
+            .itemInputs(mat.get(plate, 2), GTUtility.getIntegratedCircuit(2))
             .itemOutputs(mat.get(plateDouble))
             .duration(max(1, mat.mass * 2))
             .eut(60)
-            .addTo(hammerRecipes)
+            .addTo(benderRecipes)
 //        GregTechAPI.registerCover(
 //            mat.get(plateDouble),
 //            TextureFactory.of(mat.textureSet.mTextures[72], mat.color, false),
@@ -447,7 +447,7 @@ class NyxMaterialRecipeLoader(
             .itemOutputs(mat.get(ring, 4))
             .duration(max(1, mat.mass * 2))
             .eut(6 * volMultiply)
-            .addTo(hammerRecipes)
+            .addTo(extruderRecipes)
 
         // Gear
         GTModHandler.addCraftingRecipe(

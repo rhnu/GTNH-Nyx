@@ -55,19 +55,6 @@ class GTEasyWirelessRecipes : RecipePool() {
                     eut(tier)
                     durSec(time)
                 }
-                newRecipe {
-                    itemInputs(
-                        tier.getDynamoHatch(1),
-                        tier.getCircuit(1),
-                        tier.getComponent(Tier.Component.Emitter, 1),
-                        tier.getComponent(Tier.Component.Sensor, 1),
-                        ic(22),
-                    )
-                    fluidInputs(tier.getIngotSolder(1))
-                    itemOutputs(tier.getDynamoWireless(1))
-                    eut(tier)
-                    durSec(time)
-                }
             }
             for (tier in Tier.G_MEDIUM) {
                 newRecipe {
