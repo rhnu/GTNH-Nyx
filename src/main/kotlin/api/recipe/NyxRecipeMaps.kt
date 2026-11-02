@@ -3,7 +3,7 @@ package rhynia.nyx.api.recipe
 import gregtech.api.recipe.RecipeMap
 import gregtech.api.recipe.RecipeMapBuilder
 import gregtech.api.recipe.maps.FuelBackend
-import gregtech.nei.formatter.FuelSpecialValueFormatter
+import gregtech.api.recipe.maps.FuelFrontend
 
 @Suppress("SpellCheckingInspection")
 object NyxRecipeMaps {
@@ -14,7 +14,7 @@ object NyxRecipeMaps {
                     "nyx.recipe.restoneGenerator",
                 ) { FuelBackend(it) }
                 .maxIO(1, 1, 0, 0)
-                .neiSpecialInfoFormatter(FuelSpecialValueFormatter.INSTANCE)
+                .frontend(::FuelFrontend)
                 .build()
     }
 }

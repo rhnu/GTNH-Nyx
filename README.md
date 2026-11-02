@@ -1,6 +1,6 @@
 # Nyx: No Humans Left
 
-![Version](https://img.shields.io/badge/GTNH_Version-2.9.0_RC_1-blue)
+![Version](https://img.shields.io/badge/GTNH_Version-2.9.0-blue)
 
 English | [中文](README.zh.md)
 

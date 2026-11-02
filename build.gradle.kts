@@ -1,14 +1,14 @@
 plugins {
-    id("com.github.ElytraServers.elytra-conventions") version "v1.1.2.3"
+    id("cn.elytra.gradle.conventions") version "1.2.1"
     id("com.gtnewhorizons.gtnhconvention")
 }
 
 val gtnhManifestVersions = elytraModpackVersion.getModVersions().toMap()
 val gtnhManifestVersion = providers.gradleProperty("elytra.manifest.version").get()
-// IC2 2.2.828 in RC1: https://www.curseforge.com/minecraft/mc-mods/industrial-craft/files/6833054
+// IC2 2.2.828 in GTNH 2.9.0: https://www.curseforge.com/minecraft/mc-mods/industrial-craft/files/6833054
 val ic2CurseFileId = "6833054"
 val modpackArtifactVersions = gtnhManifestVersions.mapKeys { (name, _) -> "com.github.GTNewHorizons:$name" } + mapOf(
-    "com.github.GTNewHorizons:Mobs-Info" to "${gtnhManifestVersions.getValue("Mobs Info")}-GTNH",
+    "maven.modrinth:mobsinfo" to gtnhManifestVersions.getValue("Mobs Info"),
     "com.falsepattern:chunkapi-mc1.7.10" to gtnhManifestVersions.getValue("Chunk API"),
     "com.falsepattern:endlessids-mc1.7.10" to gtnhManifestVersions.getValue("EndlessIDs"),
     "com.falsepattern:falsepatternlib-mc1.7.10" to gtnhManifestVersions.getValue("FalsepatternLib"),
@@ -25,6 +25,13 @@ configurations.configureEach {
     resolutionStrategy {
         exclude(group = "com.github.GTNewHorizons", module = "CodeChickenLib")
         exclude(group = "net.glease", module = "tc4recipelib")
+        // GTNH 2.9.0 uses upstream Mobs Info, published on Modrinth instead of GTNH Maven.
+        dependencySubstitution {
+            substitute(module("com.github.GTNewHorizons:Mobs-Info"))
+                .using(module("maven.modrinth:mobsinfo:${artifactVersions.getValue("maven.modrinth:mobsinfo")}"))
+                .withClassifier("dev")
+                .because(alignmentReason)
+        }
         // Mod POMs can lag behind the pack; compile and test against its transitive versions too.
         eachDependency {
             // Inspect the target so GTNHGradle's IC2-to-Curse substitution is aligned as well.
