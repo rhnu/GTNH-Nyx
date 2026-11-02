@@ -213,7 +213,6 @@ enum class Tier(
         Energy64A,
         LaserEnergy,
         LaserDynamo,
-        WirelessDynamo,
         WirelessEnergy,
         WirelessEnergy4A,
         WirelessEnergy16A,
@@ -422,7 +421,6 @@ enum class Tier(
         Hatch.Energy64A -> getEnergyHatch64A(amount)
         Hatch.LaserEnergy -> getLaserTarget(1, amount)
         Hatch.LaserDynamo -> getLaserTarget(1, amount)
-        Hatch.WirelessDynamo -> getDynamoWireless(amount)
         Hatch.WirelessEnergy -> getEnergyWireless(amount)
         Hatch.WirelessEnergy4A -> getEnergyWireless4A(amount)
         Hatch.WirelessEnergy16A -> getEnergyWireless16A(amount)
@@ -556,25 +554,6 @@ enum class Tier(
             UMV -> CustomItemList.eM_dynamoMulti64_UMV.get(amount.toLong())
             UXV -> CustomItemList.eM_dynamoMulti64_UXV.get(amount.toLong())
             else -> fail("$this 64A dynamo hatch")
-        }
-
-    fun getDynamoWireless(amount: Int): ItemStack =
-        when (this) {
-            ULV -> ItemList.Wireless_Dynamo_Energy_ULV.get(amount.toLong())
-            LV -> ItemList.Wireless_Dynamo_Energy_LV.get(amount.toLong())
-            MV -> ItemList.Wireless_Dynamo_Energy_MV.get(amount.toLong())
-            HV -> ItemList.Wireless_Dynamo_Energy_HV.get(amount.toLong())
-            EV -> ItemList.Wireless_Dynamo_Energy_EV.get(amount.toLong())
-            IV -> ItemList.Wireless_Dynamo_Energy_IV.get(amount.toLong())
-            LuV -> ItemList.Wireless_Dynamo_Energy_LuV.get(amount.toLong())
-            ZPM -> ItemList.Wireless_Dynamo_Energy_ZPM.get(amount.toLong())
-            UV -> ItemList.Wireless_Dynamo_Energy_UV.get(amount.toLong())
-            UHV -> ItemList.Wireless_Dynamo_Energy_UHV.get(amount.toLong())
-            UEV -> ItemList.Wireless_Dynamo_Energy_UEV.get(amount.toLong())
-            UIV -> ItemList.Wireless_Dynamo_Energy_UIV.get(amount.toLong())
-            UMV -> ItemList.Wireless_Dynamo_Energy_UMV.get(amount.toLong())
-            UXV -> ItemList.Wireless_Dynamo_Energy_UXV.get(amount.toLong())
-            MAX -> ItemList.Wireless_Dynamo_Energy_MAX.get(amount.toLong())
         }
 
     fun getEnergyWireless(amount: Int): ItemStack =

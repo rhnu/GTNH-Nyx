@@ -26,6 +26,8 @@ Some features may need to be enabled in `config\Nyx\*.cfg`.
 
 - Mixin edits: See `MIXIN.cfg` for more details. Mainly targets AE and BartWorks (now in GT5U).
 
+- Easy wireless input recipes: `RECIPE_EASY_WIRELESS` adds assembler recipes for wireless energy hatches and UXV wireless laser hatches.
+
 - COPIER: Duplicate items in the controller
 
   **Config: `MTE_COPIER`**
@@ -46,6 +48,7 @@ Some features may need to be enabled in `config\Nyx\*.cfg`.
 > Ordinary machines keep their live RecipeMap backend. Dedicated lazy strategies also support current/legacy
 > Tree Growth Simulators and Algae Ponds, plus basic Mass Fabricators and Rock Breakers. Mock recipes are private
 > to the proxy: upstream display/fake recipes are never made executable globally.
+> Machines in the controller slot only select the machine and parallel count; recipes never consume them.
 >
 > Tree farms use saplings (including Forestry genetics) and mode-appropriate tools in input buses as reusable
 > selectors. Tools lose neither durability nor charge, including discharged electric tools; this is an intentional

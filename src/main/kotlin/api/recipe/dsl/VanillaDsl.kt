@@ -48,8 +48,12 @@ class ShapedRecipeBuilder(
         defs.add(symbol to stack)
     }
 
-    private val args =
-        buildList {
+    fun build(
+        out: ItemStack,
+        bitmask: Long,
+    ) {
+        // Build after the DSL block has supplied the shape and ingredient definitions.
+        val args = buildList {
             if (row1.isNotEmpty()) add(row1)
             if (row2.isNotEmpty()) add(row2)
             if (row3.isNotEmpty()) add(row3)
@@ -58,11 +62,6 @@ class ShapedRecipeBuilder(
                 add(stack)
             }
         }
-
-    fun build(
-        out: ItemStack,
-        bitmask: Long,
-    ) {
         GTModHandler.addCraftingRecipe(out, bitmask, args.toTypedArray())
     }
 }
