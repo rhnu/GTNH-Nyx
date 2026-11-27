@@ -3,7 +3,6 @@ package rhynia.nyx.common.mte.hatch
 import gregtech.api.enums.Textures
 import gregtech.api.interfaces.ITexture
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity
-import gregtech.api.interfaces.modularui.IAddUIWidgets
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity
 import gregtech.api.metatileentity.implementations.MTEHatch
 import gregtech.api.render.TextureFactory
@@ -11,9 +10,7 @@ import net.minecraft.item.ItemStack
 import net.minecraftforge.common.util.ForgeDirection
 import rhynia.nyx.api.util.localized
 
-class MTEHatchAddition :
-    MTEHatch,
-    IAddUIWidgets {
+class MTEHatchAddition : MTEHatch {
     constructor(id: Int, name: String) : super(id, name, "$name.name".localized(), 6, 16, arrayOf(""))
 
     constructor(

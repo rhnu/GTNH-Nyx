@@ -3,9 +3,6 @@ package rhynia.nyx.common.mte.base
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil
 import com.gtnewhorizon.structurelib.alignment.constructable.ISurvivalConstructable
 import com.gtnewhorizon.structurelib.structure.IStructureDefinition
-import com.gtnewhorizons.modularui.api.screen.ModularWindow
-import com.gtnewhorizons.modularui.api.screen.UIBuildContext
-import com.gtnewhorizons.modularui.api.widget.Widget
 import gregtech.api.enums.Textures
 import gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_ASSEMBLY_LINE
 import gregtech.api.enums.Textures.BlockIcons.OVERLAY_FRONT_ASSEMBLY_LINE_ACTIVE
@@ -538,46 +535,4 @@ abstract class NyxMTEBase<T : MTEExtendedPowerMultiBlockBase<T>> :
     override fun loadNBTData(aNBT: NBTTagCompound) {
         super.loadNBTData(aNBT)
     }
-
-    // Nyx multiblock controls and status text are built by the ModularUI 1 hooks below.
-    protected override fun useMui2(): Boolean = false
-
-    final override fun addUIWidgets(
-        builder: ModularWindow.Builder,
-        buildContext: UIBuildContext?,
-    ) {
-        super.addUIWidgets(builder, buildContext)
-        addRowUIWidgets()?.let {
-            var startingX = 80
-            it.forEach { w ->
-                w.setPos(startingX, 91)
-                builder.widget(w)
-                startingX += 18
-            }
-        }
-        addCustomUIWidgets(builder, buildContext)
-    }
-
-    /**
-     * Add a row of custom UI widgets to the machine UI.
-     * The widgets will be placed starting from (80, 91) with a gap of 18 pixels.
-     *
-     * Widgets added here don't need to set their position.
-     *
-     * Return null if no widgets are to be added.
-     */
-    open fun addRowUIWidgets(): List<Widget>? = null
-
-    /**
-     * Add custom UI widgets to the machine UI.
-     */
-    open fun addCustomUIWidgets(
-        builder: ModularWindow.Builder,
-        buildContext: UIBuildContext?,
-    ) { }
-
-    /**
-     * Get a localization key prefixed with the machine name.
-     */
-    protected inline fun locPrefixed(key: String): String = "$mName.$key"
 }

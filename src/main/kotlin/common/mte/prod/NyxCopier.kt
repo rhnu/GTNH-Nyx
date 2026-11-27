@@ -1,31 +1,36 @@
 package rhynia.nyx.common.mte.prod
 
 import com.gtnewhorizon.gtnhlib.util.numberformatting.NumberFormatUtil
-import com.gtnewhorizons.modularui.api.math.Alignment
-import com.gtnewhorizons.modularui.api.math.Color
-import com.gtnewhorizons.modularui.api.screen.ModularWindow
-import com.gtnewhorizons.modularui.api.screen.UIBuildContext
-import com.gtnewhorizons.modularui.common.widget.CycleButtonWidget
-import com.gtnewhorizons.modularui.common.widget.DynamicPositionedColumn
-import com.gtnewhorizons.modularui.common.widget.SlotWidget
-import com.gtnewhorizons.modularui.common.widget.TextWidget
-import com.gtnewhorizons.modularui.common.widget.textfield.TextFieldWidget
+import com.cleanroommc.modularui.api.drawable.IKey
+import com.cleanroommc.modularui.api.widget.IWidget
+import com.cleanroommc.modularui.screen.ModularPanel
+import com.cleanroommc.modularui.utils.Alignment
+import com.cleanroommc.modularui.utils.MathUtils
+import com.cleanroommc.modularui.value.sync.BooleanSyncValue
+import com.cleanroommc.modularui.value.sync.LongSyncValue
+import com.cleanroommc.modularui.value.sync.PanelSyncManager
+import com.cleanroommc.modularui.value.sync.StringSyncValue
+import com.cleanroommc.modularui.widgets.ListWidget
+import com.cleanroommc.modularui.widgets.ToggleButton
+import com.cleanroommc.modularui.widgets.layout.Flow
+import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget
 import gregtech.api.GregTechAPI
 import gregtech.api.enums.HatchElement.OutputBus
 import gregtech.api.enums.HatchElement.OutputHatch
 import gregtech.api.enums.Textures.BlockIcons.OVERLAY_DTPF_OFF
 import gregtech.api.enums.Textures.BlockIcons.OVERLAY_DTPF_ON
-import gregtech.api.gui.modularui.GTUITextures
 import gregtech.api.interfaces.IHatchElement
 import gregtech.api.interfaces.IIconContainer
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity
 import gregtech.api.logic.ProcessingLogic
 import gregtech.api.metatileentity.BaseTileEntity
+import gregtech.api.modularui2.GTGuiTextures
 import gregtech.api.recipe.check.CheckRecipeResult
 import gregtech.api.recipe.check.CheckRecipeResultRegistry
 import gregtech.api.util.GTUtility
 import gregtech.api.util.MultiblockTooltipBuilder
+import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui
 import gregtech.common.misc.WirelessNetworkManager.strongCheckOrAddUser
 import mcp.mobius.waila.api.IWailaConfigHandler
 import mcp.mobius.waila.api.IWailaDataAccessor
@@ -44,6 +49,7 @@ import rhynia.nyx.common.NyxItemList
 import rhynia.nyx.common.material.NyxMaterials
 import rhynia.nyx.common.mte.base.NyxMTECubeBase
 import rhynia.nyx.config.ConfigMachine
+import java.math.BigDecimal
 import java.util.UUID
 
 class NyxCopier : NyxMTECubeBase<NyxCopier> {
@@ -158,79 +164,58 @@ class NyxCopier : NyxMTECubeBase<NyxCopier> {
             .addOutputBus()
             .toolTipFinisher(CommonString.NyxMagical)
 
-    override fun addCustomUIWidgets(
-        builder: ModularWindow.Builder,
-        buildContext: UIBuildContext?,
-    ) {
-        builder.apply {
-            widget(
-                CycleButtonWidget()
-                    .setToggle({ pItemMode }, { pItemMode = it })
-                    .setTextureGetter {
-                        if (it == 1) {
-                            GTUITextures.OVERLAY_BUTTON_AUTOOUTPUT_ITEM
-                        } else {
-                            GTUITextures.OVERLAY_BUTTON_AUTOOUTPUT_FLUID
-                        }
-                    }.setPlayClickSound(true)
-                    .setUpdateTooltipEveryTick(true)
-                    .setBackground(GTUITextures.BUTTON_STANDARD)
-                    .setPos(80, 91)
-                    .setSize(16, 16)
-                    .dynamicTooltip {
-                        listOf(StatCollector.translateToLocal("nyx.machine.copier.gui.t.${if (pItemMode) 0 else 1}"))
-                    }.setTooltipShowUpDelay(BaseTileEntity.TOOLTIP_DELAY),
-            )
-            widget(
-                TextFieldWidget()
-                    .setGetterLong { pAmount }
-                    .setSetterLong { pAmount = it }
-                    .setNumbersLong { it.takeIf { it >= 0 } ?: 0L }
-                    .setTextColor(Color.WHITE.normal)
-                    .setTextAlignment(Alignment.CenterLeft)
-                    .addTooltip(StatCollector.translateToLocal("nyx.machine.copier.gui.t.2"))
-                    .setBackground(GTUITextures.BACKGROUND_TEXT_FIELD)
-                    .setPos(98, 91)
-                    .setSize(70, 16),
-            )
-        }
-    }
+    override fun getGui(): MTEMultiBlockBaseGui<*> = Gui()
 
-    override fun drawTexts(
-        screenElements: DynamicPositionedColumn,
-        inventorySlot: SlotWidget,
-    ) {
-        super.drawTexts(screenElements, inventorySlot)
-        screenElements
-            .widget(
-                TextWidget
-                    .dynamicString {
-                        StatCollector.translateToLocalFormatted("nyx.machine.copier.waila.0", pDisplayName)
-                    }.setSynced(true)
-                    .setTextAlignment(Alignment.CenterLeft)
-                    .setEnabled { baseMTE.isActive },
-            ).widget(
-                TextWidget
-                    .dynamicString {
-                        StatCollector.translateToLocalFormatted(
-                            "nyx.machine.copier.waila.1",
-                            NumberFormatUtil.formatNumber(pAmount),
-                        )
-                    }.setSynced(true)
-                    .setTextAlignment(Alignment.CenterLeft)
-                    .setEnabled { baseMTE.isActive },
-            ).widget(
-                TextWidget
-                    .dynamicString {
-                        if (pItemMode) {
-                            StatCollector.translateToLocal("nyx.machine.copier.waila.2.item")
-                        } else {
-                            StatCollector.translateToLocal("nyx.machine.copier.waila.2.fluid")
-                        }
-                    }.setSynced(true)
-                    .setTextAlignment(Alignment.CenterLeft)
-                    .setEnabled { baseMTE.isActive },
-            )
+    private inner class Gui : MTEMultiBlockBaseGui<NyxCopier>(this@NyxCopier) {
+        private val itemMode = BooleanSyncValue({ pItemMode }, { value: Boolean -> pItemMode = value }).allowC2S()
+        private val amount = LongSyncValue({ pAmount }, { value: Long -> pAmount = value }).allowC2S()
+
+        override fun createRightPanelGapRow(panel: ModularPanel, syncManager: PanelSyncManager): Flow =
+            super.createRightPanelGapRow(panel, syncManager)
+                .childPadding(2)
+                .child(
+                    TextFieldWidget()
+                        .value(amount)
+                        .setValidator { parseCopyAmount(it).toString() }
+                        .setTextAlignment(Alignment.CenterLeft)
+                        .tooltipBuilder { it.addLine(IKey.lang("nyx.machine.copier.gui.t.2")) }
+                        .tooltipShowUpTimer(BaseTileEntity.TOOLTIP_DELAY)
+                        .size(70, 16),
+                )
+                .child(
+                    ToggleButton()
+                        .value(itemMode)
+                        .overlay(true, GTGuiTextures.OVERLAY_BUTTON_AUTOOUTPUT_ITEM)
+                        .overlay(false, GTGuiTextures.OVERLAY_BUTTON_AUTOOUTPUT_FLUID)
+                        .tooltipBuilder(true) { it.addLine(IKey.lang("nyx.machine.copier.gui.t.0")) }
+                        .tooltipBuilder(false) { it.addLine(IKey.lang("nyx.machine.copier.gui.t.1")) }
+                        .tooltipShowUpTimer(BaseTileEntity.TOOLTIP_DELAY)
+                        .size(18),
+                )
+
+        override fun createTerminalTextWidget(
+            syncManager: PanelSyncManager,
+            panel: ModularPanel,
+        ): ListWidget<IWidget, *> {
+            val displayName = StringSyncValue { pDisplayName }
+            syncManager.syncValue("nyxCopyDisplayName", displayName)
+
+            return super.createTerminalTextWidget(syncManager, panel)
+                .child(statusLine(IKey.lang("nyx.machine.copier.waila.0") { arrayOf(displayName.value) }))
+                .child(statusLine(IKey.lang("nyx.machine.copier.waila.1") {
+                    arrayOf(NumberFormatUtil.formatNumber(amount.longValue))
+                }))
+                .child(statusLine(IKey.lang {
+                    if (itemMode.boolValue) "nyx.machine.copier.waila.2.item" else "nyx.machine.copier.waila.2.fluid"
+                }))
+        }
+
+        private fun statusLine(key: IKey): IWidget =
+            key.asWidget()
+                .textAlign(Alignment.CenterLeft)
+                .setEnabledIf { baseMTE.isActive }
+                .marginBottom(2)
+                .fullWidth()
     }
 
     override fun getWailaBody(
@@ -285,4 +270,13 @@ class NyxCopier : NyxMTECubeBase<NyxCopier> {
         pItemMode = aNBT.getBoolean("pItemMode")
         pAmount = aNBT.getLong("pAmount")
     }
+}
+
+/** Evaluate the field without converting its exact decimal result to Double. */
+internal fun parseCopyAmount(input: String): Long {
+    val result = MathUtils.parseExpressionWholeNumber(input, 0.0)
+    if (!result.isSuccess || !result.result.isNumberValue) return 0
+    return result.result.numberValue
+        .coerceIn(BigDecimal.ZERO, BigDecimal.valueOf(Long.MAX_VALUE))
+        .toLong()
 }
