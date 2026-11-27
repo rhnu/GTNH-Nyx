@@ -5,7 +5,7 @@ plugins {
 
 val gtnhManifestVersions = elytraModpackVersion.getModVersions().toMap()
 val gtnhManifestVersion = providers.gradleProperty("elytra.manifest.version").get()
-// IC2 2.2.828 in GTNH 2.9.0: https://www.curseforge.com/minecraft/mc-mods/industrial-craft/files/6833054
+// IC2 2.2.828: https://www.curseforge.com/minecraft/mc-mods/industrial-craft/files/6833054
 val ic2CurseFileId = "6833054"
 val modpackArtifactVersions = gtnhManifestVersions.mapKeys { (name, _) -> "com.github.GTNewHorizons:$name" } + mapOf(
     "maven.modrinth:mobsinfo" to gtnhManifestVersions.getValue("Mobs Info"),
@@ -25,7 +25,7 @@ configurations.configureEach {
     resolutionStrategy {
         exclude(group = "com.github.GTNewHorizons", module = "CodeChickenLib")
         exclude(group = "net.glease", module = "tc4recipelib")
-        // GTNH 2.9.0 uses upstream Mobs Info, published on Modrinth instead of GTNH Maven.
+        // The pack uses upstream Mobs Info, published on Modrinth instead of GTNH Maven.
         dependencySubstitution {
             substitute(module("com.github.GTNewHorizons:Mobs-Info"))
                 .using(module("maven.modrinth:mobsinfo:${artifactVersions.getValue("maven.modrinth:mobsinfo")}"))
