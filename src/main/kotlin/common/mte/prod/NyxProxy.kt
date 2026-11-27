@@ -1,18 +1,22 @@
 package rhynia.nyx.common.mte.prod
 
-import com.gtnewhorizons.modularui.api.widget.Widget
-import com.gtnewhorizons.modularui.common.widget.ButtonWidget
-import com.gtnewhorizons.modularui.common.widget.DynamicPositionedColumn
-import com.gtnewhorizons.modularui.common.widget.SlotWidget
-import com.gtnewhorizons.modularui.common.widget.TextWidget
+import com.cleanroommc.modularui.api.drawable.IKey
+import com.cleanroommc.modularui.api.widget.IWidget
+import com.cleanroommc.modularui.drawable.UITexture
+import com.cleanroommc.modularui.screen.ModularPanel
+import com.cleanroommc.modularui.value.sync.PanelSyncManager
+import com.cleanroommc.modularui.value.sync.StringSyncValue
+import com.cleanroommc.modularui.widgets.ListWidget
+import com.cleanroommc.modularui.widgets.layout.Flow
 import gregtech.api.GregTechAPI
 import gregtech.api.enums.GTValues
-import gregtech.api.gui.modularui.GTUITextures
+import gregtech.api.enums.Mods.GregTech
 import gregtech.api.interfaces.metatileentity.IMetaTileEntity
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity
 import gregtech.api.logic.ProcessingLogic
 import gregtech.api.metatileentity.BaseTileEntity.TOOLTIP_DELAY
 import gregtech.api.metatileentity.implementations.MTETieredMachineBlock
+import gregtech.api.modularui2.GTGuiTextures
 import gregtech.api.recipe.RecipeMap
 import gregtech.api.recipe.check.CheckRecipeResult
 import gregtech.api.recipe.check.CheckRecipeResultRegistry
@@ -21,6 +25,7 @@ import gregtech.api.util.GTUtility
 import gregtech.api.util.MultiblockTooltipBuilder
 import gregtech.api.util.OverclockCalculator
 import gregtech.api.util.ParallelHelper
+import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui
 import java.util.stream.Stream
 import kotlin.math.log10
 import kotlin.math.pow
@@ -39,6 +44,7 @@ import rhynia.nyx.api.process.NyxProcessingLogic
 import rhynia.nyx.api.util.localize
 import rhynia.nyx.api.util.localized
 import rhynia.nyx.common.mte.base.NyxMTECubeBase
+import rhynia.nyx.common.mte.gui.machineActionButton
 import rhynia.nyx.common.mte.proxy.AlgaeAdapter
 import rhynia.nyx.common.mte.proxy.MassFabricatorAdapter
 import rhynia.nyx.common.mte.proxy.ProxyCache
@@ -76,7 +82,7 @@ class NyxProxy : NyxMTECubeBase<NyxProxy> {
     private val currentModeName: String?
         get() =
             if (pMachine?.strategy == ProxyStrategy.ROCK_BREAKER) pRockBreaker.modeName
-            else pModes.current?.let { localize(it.unlocalizedName) }
+            else pModes.current?.unlocalizedName
 
     override val rMaxParallel: Int
         get() = LogarithmicMapper[pControllerStackSize]
@@ -245,39 +251,40 @@ class NyxProxy : NyxMTECubeBase<NyxProxy> {
             .beginStructureCube()
             .toolTipFinisher(CommonString.NyxGigaFac)
 
-    override fun drawTexts(
-        screenElements: DynamicPositionedColumn,
-        inventorySlot: SlotWidget?,
-    ) {
-        screenElements.widget(
-            TextWidget
-                .dynamicString {
-                    "${WHITE}${"nyx.common.current"
-                        .localized()}: ${currentModeName?.let { AQUA.toString() + it } ?: "${DARK_RED}?"}"
-                },
-        )
-        super.drawTexts(screenElements, inventorySlot)
-    }
+    override fun getGui(): MTEMultiBlockBaseGui<*> = Gui()
 
-    override fun addRowUIWidgets(): List<Widget> =
-        listOf(
-            ButtonWidget()
-                .setOnClick { _, _ -> updateRecipeContainer() }
-                .setPlayClickSound(true)
-                .setBackground(GTUITextures.BUTTON_STANDARD, GTUITextures.OVERLAY_BUTTON_ARROW_GREEN_UP)
-                .setSize(16, 16)
-                .addTooltip(localize("nyx.machine.proxy.gui.t.1"))
-                .setTooltipShowUpDelay(TOOLTIP_DELAY),
-            ButtonWidget()
-                .setOnClick { _, _ ->
-                    nextProxyMode()
-                }
-                .setPlayClickSound(true)
-                .setBackground(GTUITextures.BUTTON_STANDARD, GTUITextures.OVERLAY_BUTTON_CHECKMARK)
-                .setSize(16, 16)
-                .addTooltip(localize("nyx.machine.proxy.gui.t.0"))
-                .setTooltipShowUpDelay(TOOLTIP_DELAY),
-        )
+    private inner class Gui : MTEMultiBlockBaseGui<NyxProxy>(this@NyxProxy) {
+        override fun createTerminalTextWidget(
+            syncManager: PanelSyncManager,
+            panel: ModularPanel,
+        ): ListWidget<IWidget, *> {
+            val mode = StringSyncValue { currentModeName.orEmpty() }
+            syncManager.syncValue("nyxProxyMode", mode)
+
+            val modeLine = IKey.dynamic {
+                val name = mode.value.takeIf { it.isNotEmpty() }?.let { "$AQUA${localize(it)}" } ?: "${DARK_RED}?"
+                "$WHITE${"nyx.common.current".localized()}: $name"
+            }
+            return super.createTerminalTextWidget(syncManager, panel)
+                .child(modeLine.asWidget().marginBottom(2).fullWidth())
+        }
+
+        override fun createRightPanelGapRow(panel: ModularPanel, syncManager: PanelSyncManager): Flow =
+            super.createRightPanelGapRow(panel, syncManager)
+                .childPadding(2)
+                .child(
+                    machineActionButton(GTGuiTextures.OVERLAY_BUTTON_CHECKMARK) { nextProxyMode() }
+                        .tooltipBuilder { it.addLine(IKey.lang("nyx.machine.proxy.gui.t.0")) }
+                        .tooltipShowUpTimer(TOOLTIP_DELAY),
+                )
+                .child(
+                    machineActionButton(UITexture.fullImage(GregTech.ID, "gui/overlay_button/arrow_green_up")) {
+                        updateRecipeContainer()
+                    }
+                        .tooltipBuilder { it.addLine(IKey.lang("nyx.machine.proxy.gui.t.1")) }
+                        .tooltipShowUpTimer(TOOLTIP_DELAY),
+                )
+    }
 
     override fun loadNBTData(aNBT: NBTTagCompound) {
         super.loadNBTData(aNBT)

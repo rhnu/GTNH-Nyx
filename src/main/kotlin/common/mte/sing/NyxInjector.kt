@@ -2,24 +2,32 @@
 
 package rhynia.nyx.common.mte.sing
 
-import com.gtnewhorizons.modularui.api.drawable.IDrawable
-import com.gtnewhorizons.modularui.api.screen.ModularWindow
-import com.gtnewhorizons.modularui.api.screen.UIBuildContext
-import com.gtnewhorizons.modularui.common.widget.ButtonWidget
-import com.gtnewhorizons.modularui.common.widget.DrawableWidget
-import com.gtnewhorizons.modularui.common.widget.TextWidget
-import com.gtnewhorizons.modularui.common.widget.textfield.TextFieldWidget
+import com.cleanroommc.modularui.api.drawable.IDrawable
+import com.cleanroommc.modularui.api.drawable.IKey
+import com.cleanroommc.modularui.drawable.UITexture
+import com.cleanroommc.modularui.factory.PosGuiData
+import com.cleanroommc.modularui.screen.ModularPanel
+import com.cleanroommc.modularui.screen.UISettings
+import com.cleanroommc.modularui.utils.Color
+import com.cleanroommc.modularui.value.sync.IntSyncValue
+import com.cleanroommc.modularui.value.sync.PanelSyncManager
+import com.cleanroommc.modularui.widgets.textfield.TextFieldWidget
 import cpw.mods.fml.relauncher.Side
 import cpw.mods.fml.relauncher.SideOnly
 import gregtech.api.enums.GTValues.VN
+import gregtech.api.enums.Mods.GregTech
 import gregtech.api.enums.Textures
-import gregtech.api.gui.modularui.GTUITextures
+import gregtech.api.enums.Textures.BlockIcons.MACHINE_CASINGS
+import gregtech.api.enums.Textures.BlockIcons.OVERLAYS_ENERGY_IN
+import gregtech.api.enums.Textures.BlockIcons.OVERLAYS_ENERGY_IN_MULTI_LASER
+import gregtech.api.enums.Textures.BlockIcons.OVERLAYS_ENERGY_OUT
+import gregtech.api.enums.Textures.BlockIcons.OVERLAYS_ENERGY_OUT_MULTI_LASER
 import gregtech.api.interfaces.ITexture
-import gregtech.api.interfaces.modularui.IAddGregtechLogo
-import gregtech.api.interfaces.modularui.IAddUIWidgets
 import gregtech.api.interfaces.tileentity.IGregTechTileEntity
 import gregtech.api.metatileentity.MetaTileEntity
 import gregtech.api.metatileentity.implementations.MTETieredMachineBlock
+import gregtech.api.modularui2.GTGuiTextures
+import gregtech.api.modularui2.GTGuis
 import gregtech.api.render.TextureFactory
 import gregtech.api.util.GTUtility
 import gregtech.common.misc.WirelessNetworkManager.addEUToGlobalEnergyMap
@@ -30,28 +38,21 @@ import net.minecraft.nbt.NBTTagCompound
 import net.minecraft.util.StatCollector
 import net.minecraftforge.common.util.ForgeDirection
 import rhynia.nyx.api.enums.CommonString
-import rhynia.nyx.api.enums.Texture.Logo32
-import tectech.thing.metaTileEntity.Textures.MACHINE_CASINGS_TT
-import tectech.thing.metaTileEntity.Textures.OVERLAYS_ENERGY_IN_LASER_TT
-import tectech.thing.metaTileEntity.Textures.OVERLAYS_ENERGY_IN_POWER_TT
-import tectech.thing.metaTileEntity.Textures.OVERLAYS_ENERGY_OUT_LASER_TT
-import tectech.thing.metaTileEntity.Textures.OVERLAYS_ENERGY_OUT_POWER_TT
+import rhynia.nyx.common.mte.gui.machineActionButton
 import tectech.util.CommonValues.TRANSFER_AT
 import tectech.util.TTUtility
 import java.util.UUID
-import java.util.function.Consumer
-import java.util.function.Supplier
 import kotlin.math.abs
+import kotlin.reflect.KMutableProperty0
 
-class NyxInjector :
-    MTETieredMachineBlock,
-    IAddUIWidgets,
-    IAddGregtechLogo {
+class NyxInjector : MTETieredMachineBlock {
     private var wireless = false
     private var ownerUUID: UUID? = null
     var eUT: Int = 0
     var aMP: Int = 0
-    var producing: Boolean = true
+    val producing: Boolean get() = totalPower >= 0
+
+    private val totalPower: Long get() = eUT.toLong() * aMP
 
     constructor(
         aID: Int,
@@ -117,15 +118,15 @@ class NyxInjector :
         val overlay =
             if (side != facing) {
                 when {
-                    wireless && aActive -> OVERLAYS_ENERGY_OUT_LASER_TT[tier]
-                    wireless -> OVERLAYS_ENERGY_IN_LASER_TT[tier]
-                    aActive -> OVERLAYS_ENERGY_OUT_POWER_TT[tier]
-                    else -> OVERLAYS_ENERGY_IN_POWER_TT[tier]
+                    wireless && aActive -> OVERLAYS_ENERGY_OUT_MULTI_LASER[tier + 1]
+                    wireless -> OVERLAYS_ENERGY_IN_MULTI_LASER[tier + 1]
+                    aActive -> OVERLAYS_ENERGY_OUT[tier + 1]
+                    else -> OVERLAYS_ENERGY_IN[tier + 1]
                 }
             } else {
                 GENNY
             }
-        return arrayOf(MACHINE_CASINGS_TT[tier][colorIndex + 1], overlay)
+        return arrayOf(MACHINE_CASINGS[tier][colorIndex + 1], overlay)
     }
 
     override fun getTextureSet(aTextures: Array<ITexture?>?): Array<Array<Array<ITexture?>?>?>? = null
@@ -154,7 +155,6 @@ class NyxInjector :
         this.eUT = aNBT.getInteger("eEUT")
         this.aMP = aNBT.getInteger("eAMP")
         wireless = aNBT.getBoolean("eWireless")
-        producing = aMP.toLong() * this.eUT >= 0
 
         baseMetaTileEntity?.isActive = producing
     }
@@ -214,7 +214,7 @@ class NyxInjector :
     override fun maxEUOutput(): Long = if (producing) abs(eUT.toLong()) else 0
 
     override fun maxEUStore(): Long {
-        val base = abs(eUT.toLong() * aMP)
+        val base = abs(totalPower)
         return if (wireless) {
             if (base > Long.MAX_VALUE / 24) Long.MAX_VALUE else base * 24
         } else {
@@ -224,235 +224,63 @@ class NyxInjector :
 
     override fun maxProgresstime(): Int = baseMetaTileEntity!!.universalEnergyCapacity.toInt()
 
-    override fun addGregTechLogo(builder: ModularWindow.Builder) {
-        builder.widget(DrawableWidget().setDrawable(Logo32).setSize(17, 17).setPos(113, 56))
+    protected override fun useMui2(): Boolean = true
+
+    override fun buildUI(data: PosGuiData, syncManager: PanelSyncManager, uiSettings: UISettings): ModularPanel {
+        val voltage = IntSyncValue({ eUT }, { value: Int -> eUT = value }).allowC2S()
+        val amperage = IntSyncValue({ aMP }, { value: Int -> aMP = value }).allowC2S()
+        return GTGuis.mteTemplatePanelBuilder(this, data, syncManager, uiSettings)
+            .build()
+            .child(GTGuiTextures.PICTURE_SCREEN_BLACK.asWidget().size(90, 72).pos(43, 4))
+            .child(LOGO.asWidget().size(17).pos(113, 56))
+            .child(powerText(IKey.dynamic { "TIER: " + VN[GTUtility.getTier(abs(eUT.toLong())).toInt()] }, 22))
+            .child(powerText(IKey.dynamic { "SUM: $totalPower" }, 46))
+            .apply {
+                addPowerField("EUT: ", voltage, 8)
+                addPowerField("AMP: ", amperage, 34)
+                addAdjustments(::eUT, 4)
+                addAdjustments(::aMP, 40)
+            }
     }
 
-    override fun addUIWidgets(
-        builder: ModularWindow.Builder,
-        buildContext: UIBuildContext?,
-    ) {
-        builder
-            .widget(
-                DrawableWidget()
-                    .setDrawable(GTUITextures.PICTURE_SCREEN_BLACK)
-                    .setSize(90, 72)
-                    .setPos(43, 4),
-            ).widget(
-                TextWidget
-                    .dynamicString {
-                        "TIER: " + VN[GTUtility.getTier(abs(eUT.toLong())).toInt()]
-                    }.setDefaultColor(COLOR_TEXT_WHITE.get())
-                    .setPos(46, 22),
-            ).widget(
-                TextWidget
-                    .dynamicString { "SUM: " + aMP.toLong() * this.eUT }
-                    .setDefaultColor(COLOR_TEXT_WHITE.get())
-                    .setPos(46, 46),
-            )
+    private fun powerText(key: IKey, y: Int) = key.color(Color.WHITE.main).asWidget().pos(46, y)
 
-        addLabelledIntegerTextField(builder, "EUT: ", { this.eUT }, { this.eUT = it!! }, 8)
-        addLabelledIntegerTextField(builder, "AMP: ", { this.aMP }, { this.aMP = it!! }, 34)
-
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_MINUS_LARGE,
-            { eUT -= it!! },
-            512,
-            64,
-            7,
-            4,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_MINUS_LARGE,
-            { eUT /= it!! },
-            512,
-            64,
-            7,
-            22,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_MINUS_LARGE,
-            { aMP -= it!! },
-            512,
-            64,
-            7,
-            40,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_MINUS_LARGE,
-            { aMP /= it!! },
-            512,
-            64,
-            7,
-            58,
-        )
-
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_MINUS_SMALL,
-            { eUT -= it!! },
-            16,
-            1,
-            25,
-            4,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_MINUS_SMALL,
-            { eUT /= it!! },
-            16,
-            2,
-            25,
-            22,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_MINUS_SMALL,
-            { aMP -= it!! },
-            16,
-            1,
-            25,
-            40,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_MINUS_SMALL,
-            { aMP /= it!! },
-            16,
-            2,
-            25,
-            58,
-        )
-
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_PLUS_SMALL,
-            { eUT += it!! },
-            16,
-            1,
-            133,
-            4,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_PLUS_SMALL,
-            { eUT *= it!! },
-            16,
-            2,
-            133,
-            22,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_PLUS_SMALL,
-            { aMP += it!! },
-            16,
-            1,
-            133,
-            40,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_PLUS_SMALL,
-            { aMP *= it!! },
-            16,
-            2,
-            133,
-            58,
-        )
-
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_PLUS_LARGE,
-            { eUT += it!! },
-            512,
-            64,
-            151,
-            4,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_PLUS_LARGE,
-            { eUT *= it!! },
-            512,
-            64,
-            151,
-            22,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_PLUS_LARGE,
-            { aMP += it!! },
-            512,
-            64,
-            151,
-            40,
-        )
-        addChangeNumberButton(
-            builder,
-            GTUITextures.OVERLAY_BUTTON_PLUS_LARGE,
-            { aMP *= it!! },
-            512,
-            64,
-            151,
-            58,
+    private fun ModularPanel.addPowerField(label: String, value: IntSyncValue, y: Int) {
+        child(powerText(IKey.str(label), y))
+        child(
+            TextFieldWidget()
+                .value(value)
+                .numbersInt(Int.MIN_VALUE, Int.MAX_VALUE)
+                .setTextColor(Color.WHITE.main)
+                .background(GTGuiTextures.BACKGROUND_TEXT_FIELD)
+                .size(56, 12)
+                .pos(70, y - 2),
         )
     }
 
-    private fun addLabelledIntegerTextField(
-        builder: ModularWindow.Builder,
-        label: String,
-        getter: Supplier<Int?>?,
-        setter: Consumer<Int?>?,
-        yPos: Int,
-    ) {
-        val t = TextFieldWidget()
-        val ltw = TextWidget(label)
-        val xPos = 46
-        builder
-            .widget(ltw.setDefaultColor(COLOR_TEXT_WHITE.get()).setPos(xPos, yPos))
-            .widget(
-                t
-                    .setSetterInt(setter)
-                    .setGetterInt(getter)
-                    .setTextColor(COLOR_TEXT_WHITE.get())
-                    .setBackground(
-                        GTUITextures.BACKGROUND_TEXT_FIELD.withOffset(
-                            (-1).toFloat(),
-                            (-1).toFloat(),
-                            (2).toFloat(),
-                            (2).toFloat(),
-                        ),
-                    ).setPos(xPos + 24, yPos - 1)
-                    .setSize(56, 10),
-            )
-    }
+    private fun ModularPanel.addAdjustments(value: KMutableProperty0<Int>, y: Int) {
+        fun change(overlay: IDrawable, x: Int, y: Int, step: Int, shiftStep: Int, adjust: (Int, Int) -> Int) {
+            child(machineActionButton(overlay) { click ->
+                value.set(adjust(value.get(), if (click.shift) shiftStep else step))
+            }.pos(x, y))
+        }
 
-    private fun addChangeNumberButton(
-        builder: ModularWindow.Builder,
-        overlay: IDrawable?,
-        setter: Consumer<Int?>,
-        changeNumberShift: Int,
-        changeNumber: Int,
-        xPos: Int,
-        yPos: Int,
-    ) {
-        builder.widget(
-            ButtonWidget()
-                .setOnClick { clickData, _ ->
-                    setter.accept(if (clickData!!.shift) changeNumberShift else changeNumber)
-                    producing = aMP.toLong() * this.eUT >= 0
-                }.setBackground(GTUITextures.BUTTON_STANDARD, overlay)
-                .setSize(18, 18)
-                .setPos(xPos, yPos),
-        )
+        change(MINUS_LARGE, 7, y, 64, 512, Int::minus)
+        change(MINUS_SMALL, 25, y, 1, 16, Int::minus)
+        change(GTGuiTextures.OVERLAY_BUTTON_PLUS_SMALL, 133, y, 1, 16, Int::plus)
+        change(GTGuiTextures.OVERLAY_BUTTON_PLUS_LARGE, 151, y, 64, 512, Int::plus)
+
+        change(MINUS_LARGE, 7, y + 18, 64, 512, Int::div)
+        change(MINUS_SMALL, 25, y + 18, 2, 16, Int::div)
+        change(GTGuiTextures.OVERLAY_BUTTON_PLUS_SMALL, 133, y + 18, 2, 16, Int::times)
+        change(GTGuiTextures.OVERLAY_BUTTON_PLUS_LARGE, 151, y + 18, 64, 512, Int::times)
     }
 
     companion object {
+        private val LOGO = UITexture.fullImage("nyx", "gui/picture/va_logo_32_t")
+        private val MINUS_LARGE = UITexture.fullImage(GregTech.ID, "gui/overlay_button/minus_large")
+        private val MINUS_SMALL = UITexture.fullImage(GregTech.ID, "gui/overlay_button/minus_small")
+
         @Suppress("SpellCheckingInspection")
         val GENNY: ITexture by lazy {
             TextureFactory.of(Textures.BlockIcons.custom("iconsets/GENNY"))

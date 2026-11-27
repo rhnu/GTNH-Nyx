@@ -1,9 +1,12 @@
 package rhynia.nyx.common.mte.prod
 
-import com.gtnewhorizons.modularui.api.math.Alignment
-import com.gtnewhorizons.modularui.common.widget.DynamicPositionedColumn
-import com.gtnewhorizons.modularui.common.widget.SlotWidget
-import com.gtnewhorizons.modularui.common.widget.TextWidget
+import com.cleanroommc.modularui.api.drawable.IKey
+import com.cleanroommc.modularui.api.widget.IWidget
+import com.cleanroommc.modularui.screen.ModularPanel
+import com.cleanroommc.modularui.utils.Alignment
+import com.cleanroommc.modularui.value.sync.PanelSyncManager
+import com.cleanroommc.modularui.value.sync.StringSyncValue
+import com.cleanroommc.modularui.widgets.ListWidget
 import gregtech.api.GregTechAPI
 import gregtech.api.enums.HatchElement.InputBus
 import gregtech.api.enums.HatchElement.OutputBus
@@ -18,6 +21,7 @@ import gregtech.api.logic.ProcessingLogic
 import gregtech.api.recipe.check.CheckRecipeResult
 import gregtech.api.recipe.check.CheckRecipeResultRegistry
 import gregtech.api.util.MultiblockTooltipBuilder
+import gregtech.common.gui.modularui.multiblock.base.MTEMultiBlockBaseGui
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap
 import net.minecraft.block.Block
@@ -202,22 +206,25 @@ class NyxConverter : NyxMTECubeBase<NyxConverter> {
         return CheckRecipeResultRegistry.SUCCESSFUL
     }
 
-    override fun drawTexts(
-        screenElements: DynamicPositionedColumn,
-        inventorySlot: SlotWidget,
-    ) {
-        super.drawTexts(screenElements, inventorySlot)
-        screenElements.apply {
-            widget(
-                TextWidget
-                    .dynamicString {
-                        "${localize(locPrefixed("gui.t.0"))}: ${EnumChatFormatting.AQUA}${
-                            pOrePrefix?.defaultLocalName ?: "EMPTY"
-                        }"
-                    }.setSynced(true)
-                    .setTextAlignment(Alignment.CenterLeft)
-                    .setEnabled { baseMTE.isActive },
-            )
+    override fun getGui(): MTEMultiBlockBaseGui<*> = Gui()
+
+    private inner class Gui : MTEMultiBlockBaseGui<NyxConverter>(this@NyxConverter) {
+        override fun createTerminalTextWidget(
+            syncManager: PanelSyncManager,
+            panel: ModularPanel,
+        ): ListWidget<IWidget, *> {
+            val prefix = StringSyncValue { pOrePrefix?.defaultLocalName ?: "EMPTY" }
+            syncManager.syncValue("nyxOrePrefix", prefix)
+
+            return super.createTerminalTextWidget(syncManager, panel)
+                .child(
+                    IKey.dynamic { "${localize("$mName.gui.t.0")}: ${EnumChatFormatting.AQUA}${prefix.value}" }
+                        .asWidget()
+                        .textAlign(Alignment.CenterLeft)
+                        .setEnabledIf { baseMTE.isActive }
+                        .marginBottom(2)
+                        .fullWidth(),
+                )
         }
     }
 
