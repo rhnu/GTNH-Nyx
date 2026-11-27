@@ -539,6 +539,9 @@ abstract class NyxMTEBase<T : MTEExtendedPowerMultiBlockBase<T>> :
         super.loadNBTData(aNBT)
     }
 
+    // Nyx multiblock controls and status text are built by the ModularUI 1 hooks below.
+    protected override fun useMui2(): Boolean = false
+
     final override fun addUIWidgets(
         builder: ModularWindow.Builder,
         buildContext: UIBuildContext?,
